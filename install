@@ -7,8 +7,5 @@ rm -rf ~/Library/Application\ Support/Developer/Shared/Xcode/Plug-ins/XcodeColor
 
 # Install new version
 
-
 mkdir -p ~/Library/Application\ Support/Developer/Shared/Xcode/Plug-ins 2>/dev/null
-cp -r ${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME} ~/Library/Application\ Support/Developer/Shared/Xcode/Plug-ins/XcodeColors.xcplugin
-
-echo Installed
+cp -r "${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}" ~/Library/Application\ Support/Developer/Shared/Xcode/Plug-ins/XcodeColors.xcplugin && echo Installed
