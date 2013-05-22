@@ -81,18 +81,18 @@ static NSUInteger ParseEscapeSequence(NSString *component, NSMutableDictionary *
 				if ((i + 3) >= paramList.count)
 					return 0;
 				attrs[NSForegroundColorAttributeName] = [NSColor
-					colorWithCalibratedRed:[paramList[++i] integerValue] / 255.0
-					green:[paramList[++i] integerValue] / 255.0
-					blue:[paramList[++i] integerValue] / 255.0
+					colorWithCalibratedRed:((CGFloat)[paramList[++i] integerValue]) / 255.0
+					green:((CGFloat)[paramList[++i] integerValue]) / 255.0
+					blue:((CGFloat)[paramList[++i] integerValue]) / 255.0
 					alpha:1.0];
 				break;
 			case 400:
 				if ((i + 3) >= paramList.count)
 					return 0;
 				attrs[NSBackgroundColorAttributeName] = [NSColor
-					colorWithCalibratedRed:[paramList[++i] unsignedIntegerValue] / 255.0
-					green:[paramList[++i] unsignedIntegerValue] / 255.0
-					blue:[paramList[++i] unsignedIntegerValue] / 255.0
+					colorWithCalibratedRed:(CGFloat)[paramList[++i] integerValue] / 255.0
+					green:(CGFloat)[paramList[++i] integerValue] / 255.0
+					blue:(CGFloat)[paramList[++i] integerValue] / 255.0
 					alpha:1.0];
 				break;
 			default:
