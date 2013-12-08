@@ -30,13 +30,16 @@
 #define XCODE_COLORS_RESET_BG  XCODE_COLORS_ESCAPE @"bg;" // Clear any background color
 #define XCODE_COLORS_RESET     XCODE_COLORS_ESCAPE @";"   // Clear any foreground or background color
 
+#define LogBlue(frmt, ...) NSLog((XCODE_COLORS_ESCAPE @"fg0,0,255;" frmt XCODE_COLORS_RESET), ##__VA_ARGS__)
+
 @implementation AppDelegate
 
 @synthesize window = _window;
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
-	NSLog(@"If you don't see colors below, make sure you follow the installation instructions in the README.");
+	NSLog(@"After building the XcodeColors plugin for the first time, you MUST RESTART XCODE.");
+	NSLog(@"If you still don't see colors below, please consult the README.");
 	
 	NSLog(XCODE_COLORS_ESCAPE @"fg0,0,255;" @"Blue text" XCODE_COLORS_RESET);
 	
@@ -48,6 +51,8 @@
 		  XCODE_COLORS_RESET);
 	
 	NSLog(XCODE_COLORS_ESCAPE @"fg209,57,168;" @"You can supply your own RGB values!" XCODE_COLORS_RESET);
+	
+	LogBlue(@"Blue text via macro");
 }
 
 @end
