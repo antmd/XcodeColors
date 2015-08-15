@@ -7,7 +7,7 @@
 //
 
 #import "XcodeColors.h"
-#import <objc/runtime.h>
+#import "JRSwizzle.h"
 
 #define XCODE_COLORS "XcodeColors"
 #define SOLARIZED_DARK 1
@@ -29,7 +29,7 @@ static IMP IMP_NSTextStorage_fixAttributesInRange = nil;
 static bool XcodeColors_intensityStateFlag = false;
 
 
-@implementation XcodeColors_NSTextStorage
+@implementation NSTextStorage (XcodeColors)
 
 static NSColor *colorForCode(NSUInteger code, BOOL bright)
 {
@@ -217,25 +217,31 @@ static void ApplyANSIColors(NSTextStorage *textStorage, NSRange textStorageRange
 	}
 }
 
-- (void)fixAttributesInRange:(NSRange)aRange
+- (void)xc_fixAttributesInRange:(NSRange)aRange
 {
         static Class sIDEConsoleTextViewClass = nil;
         if (!sIDEConsoleTextViewClass) {
                 sIDEConsoleTextViewClass = NSClassFromString(@"IDEConsoleTextView");
         }
-	// This method "overrides" the method within NSTextStorage.
-	
-	// First we invoke the actual NSTextStorage method.
-	// This allows it to do any normal processing.
-	
-	IMP_NSTextStorage_fixAttributesInRange(self, _cmd, aRange);
-	
-	// Then we scan for our special escape sequences, and apply desired color attributes.
-	
-        if ([self layoutManagers].count && [[self.layoutManagers[0] delegate] isKindOfClass:sIDEConsoleTextViewClass]) {
-                	ApplyANSIColors(self, aRange, XCODE_COLORS_ESCAPE);
+        // This method "overrides" the method within NSTextStorage.
+        
+        // First we invoke the actual NSTextStorage method.
+        // This allows it to do any normal processing.
+        
+        // Swizzling makes this look like a recursive call but it's not -- it calls the original!
+        [self xc_fixAttributesInRange:aRange];
+        
+        // Then we scan for our special escape sequences, and apply desired color attributes.
+        
+        if ([self layoutManagers].count
+            && [[self.layoutManagers[0] delegate] isKindOfClass:sIDEConsoleTextViewClass]
+            && aRange.length < 1E10) {
+                char *xcode_colors = getenv(XCODE_COLORS);
+                if (xcode_colors && (strcmp(xcode_colors, "YES") == 0))
+                        ApplyANSIColors(self, aRange, XCODE_COLORS_ESCAPE);
         }
 }
+
 
 @end
 
@@ -245,53 +251,30 @@ static void ApplyANSIColors(NSTextStorage *textStorage, NSRange textStorageRange
 
 @implementation XcodeColors
 
-IMP ReplaceInstanceMethod(Class sourceClass, SEL sourceSel, Class destinationClass, SEL destinationSel)
-{
-	if (!sourceSel || !sourceClass || !destinationClass)
-	{
-		NSLog(@"XcodeColors: Missing parameter to ReplaceInstanceMethod");
-		return nil;
-	}
-	
-	if (!destinationSel)
-		destinationSel = sourceSel;
-	
-	Method sourceMethod = class_getInstanceMethod(sourceClass, sourceSel);
-	if (!sourceMethod)
-	{
-		NSLog(@"XcodeColors: Unable to get sourceMethod");
-		return nil;
-	}
-	
-	IMP prevImplementation = method_getImplementation(sourceMethod);
-	
-	Method destinationMethod = class_getInstanceMethod(destinationClass, destinationSel);
-	if (!destinationMethod)
-	{
-		NSLog(@"XcodeColors: Unable to get destinationMethod");
-		return nil;
-	}
-	
-	IMP newImplementation = method_getImplementation(destinationMethod);
-	if (!newImplementation)
-	{
-		NSLog(@"XcodeColors: Unable to get newImplementation");
-		return nil;
-	}
-	
-	method_setImplementation(sourceMethod, newImplementation);
-	
-	return prevImplementation;
-}
 
 + (void)load
 {
-	NSLog(@"XcodeColors: %@ (v10.1)", NSStringFromSelector(_cmd));
-	
-	IMP_NSTextStorage_fixAttributesInRange =
-	    ReplaceInstanceMethod(NSClassFromString(@"DVTTextStorage"), @selector(fixAttributesInRange:),
-							  [XcodeColors_NSTextStorage class], @selector(fixAttributesInRange:));
+        static dispatch_once_t onceToken;
+        dispatch_once(&onceToken, ^{
+                /*
+                char *xcode_colors = getenv(XCODE_COLORS);
+                if (xcode_colors && (strcmp(xcode_colors, "YES") != 0))
+                        return;
+                 */
+                
+                SEL origSel = @selector(fixAttributesInRange:);
+                SEL altSel = @selector(xc_fixAttributesInRange:);
+                NSError *error = nil;
+                
+                if (![NSTextStorage jr_swizzleMethod:origSel withMethod:altSel error:&error]) {
+                        NSLog(@"XcodeColors: Error swizzling methods: %@", error);
+                        return;
+                }
+                
+                setenv(XCODE_COLORS, "YES", 0);
+        });
 }
+
 
 + (void)pluginDidLoad:(id)xcodeDirectCompatibility
 {
