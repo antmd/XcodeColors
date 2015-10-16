@@ -254,6 +254,14 @@ static void ApplyANSIColors(NSTextStorage *textStorage, NSRange textStorageRange
 
 + (void)load
 {
+        NSBundle* app = [NSBundle mainBundle];
+        NSString* identifier = [app bundleIdentifier];
+        
+        // Load only into Xcode
+        if( ![identifier isEqualToString:@"com.apple.dt.Xcode"] ){
+                return;
+        }
+        
         static dispatch_once_t onceToken;
         dispatch_once(&onceToken, ^{
                 /*
@@ -273,17 +281,16 @@ static void ApplyANSIColors(NSTextStorage *textStorage, NSRange textStorageRange
                 
                 setenv(XCODE_COLORS, "YES", 0);
         });
+	NSLog(@"XcodeColors: %@", NSStringFromSelector(_cmd));
 }
 
 
 + (void)pluginDidLoad:(id)xcodeDirectCompatibility
 {
-	NSLog(@"XcodeColors: %@", NSStringFromSelector(_cmd));
 }
 
 - (void)registerLaunchSystemDescriptions
 {
-	NSLog(@"XcodeColors: %@", NSStringFromSelector(_cmd));
 }
 
 @end
